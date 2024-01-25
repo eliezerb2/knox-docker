@@ -17,16 +17,16 @@ version: '3'
 services:
   knox:
     container_name: knox
-    # Change the image version if the release args are used to specify
-    # a different Knox version
     image: knox/${RELEASE_VER}
     build:
       context: .
       args:
         - RELEASE_VER=${RELEASE_VER}
-        - RELEASE_MIRROR=http://apache.claz.org
+        - RELEASE_MIRROR=${RELEASE_MIRROR}
+        - KNOX_USER=${KNOX_USER}
+        - KNOX_INTERNAL_PORT=${KNOX_INTERNAL_PORT}
     ports:
-      - "8443:8443"
+      - "${KNOX_EXTERNAL_PORT}:${KNOX_INTERNAL_PORT}"
     networks:
       - knox-test
 

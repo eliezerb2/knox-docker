@@ -18,22 +18,33 @@ FROM openjdk:8-jdk
 WORKDIR /usr/local
 
 # Default argument values
-ARG RELEASE_VER=1.1.0
-ARG RELEASE_MIRROR=http://apache.claz.org
+ARG RELEASE_VER=1.3.0
+ARG RELEASE_MIRROR=https://downloads.apache.org
+ARG KNOX_USER=knox
+ARG KNOX_INTERNAL_PORT=8443
 
 # Add the knox user
-RUN useradd -m knox
+RUN useradd -m $KNOX_USER
+ENV KNOX_PATH /usr/local/knox-$RELEASE_VER
+ENV BIN_PATH $KNOX_PATH/bin
 
 # Download and unpack the Knox release
 RUN wget $RELEASE_MIRROR/knox/$RELEASE_VER/knox-$RELEASE_VER.zip
 RUN unzip knox-$RELEASE_VER.zip
-RUN chown -R knox knox-$RELEASE_VER
+RUN chown -R knox $KNOX_PATH
 
 # Create a startup script for the container command
-RUN echo '#!/bin/bash\n#\n\nrunuser -l knox -c "/usr/local/knox-'$RELEASE_VER'/bin/knoxcli.sh create-master --master knox"\nrunuser -l knox -c "/usr/local/knox-'$RELEASE_VER'/bin/ldap.sh start"\nrunuser -l knox -c "/usr/local/knox-'$RELEASE_VER'/bin/gateway.sh start"\nrunuser -l knox -c "/usr/local/knox-'$RELEASE_VER'/bin/knoxcli.sh create-alias sandbox.discovery.pwd --value maria_dev"\ntail -f /usr/local/knox-'$RELEASE_VER'/logs/gateway.log' > /usr/local/start-knox.sh
+RUN chmod a+rwx $BIN_PATH
+RUN chmod a+rwx /usr/local
+ENV KNOX_PATH /usr/local/knox-$RELEASE_VER
+ENV BIN_PATH $KNOX_PATH/bin
+COPY start-knox.sh /usr/local
+#RUN echo '#!/bin/bash\n#\n\nrunuser -l knox -c "/usr/local/knox-'$RELEASE_VER'/bin/knoxcli.sh create-master --master knox"\nrunuser -l knox -c "/usr/local/knox-'$RELEASE_VER'/bin/ldap.sh start"\nrunuser -l knox -c "/usr/local/knox-'$RELEASE_VER'/bin/gateway.sh start"\nrunuser -l knox -c "/usr/local/knox-'$RELEASE_VER'/bin/knoxcli.sh create-alias sandbox.discovery.pwd --value maria_dev"\ntail -f /usr/local/knox-'$RELEASE_VER'/logs/gateway.log' > /usr/local/start-knox.sh
 
-RUN chmod +x start-knox.sh
+RUN chmod +x /usr/local/start-knox.sh
 
-EXPOSE 8443
+EXPOSE $KNOX_INTERNAL_PORT
 
+#USER $KNOX_USER
+#WORKDIR $BIN_PATH
 CMD ["/bin/bash", "start-knox.sh"]
